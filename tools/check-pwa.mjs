@@ -28,6 +28,18 @@ try {
   const pageErrors = [];
   page.on('pageerror', err => pageErrors.push(err.message));
 
+  // 網站可能在檢查途中自己重新載入（例如換新版），等它載完再問一次
+  const stableEval = async fn => {
+    for (let i = 0; ; i++) {
+      try {
+        return await page.evaluate(fn);
+      } catch (err) {
+        if (i >= 3 || !/context was destroyed|navigation/i.test(err.message)) throw err;
+        await page.waitForLoadState('load').catch(() => {});
+      }
+    }
+  };
+
   const first = await page.goto(target, { waitUntil: 'load', timeout: 30000 });
   if (!first || !first.ok()) fail('網站打得開', 'HTTP ' + (first && first.status()));
   else pass('網站打得開', 'HTTP ' + first.status());
@@ -36,7 +48,7 @@ try {
   const maxAge = Number((htmlCache.match(/max-age=(\d+)/) || [])[1] || 0);
   if (maxAge > 3600) warn('網頁快取時間', `${htmlCache}：更新後使用者可能要等 ${Math.round(maxAge / 3600)} 小時`);
 
-  const manifestHref = await page.evaluate(() => {
+  const manifestHref = await stableEval(() => {
     const l = document.querySelector('link[rel="manifest"]');
     return l ? l.href : null;
   });
@@ -61,7 +73,7 @@ try {
     }
   }
 
-  await page.evaluate(() => Promise.race([
+  await stableEval(() => Promise.race([
     navigator.serviceWorker ? navigator.serviceWorker.ready : Promise.resolve(),
     new Promise(r => setTimeout(r, 8000)),
   ]));
@@ -90,7 +102,7 @@ try {
   await context.setOffline(true);
   try {
     await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 15000 });
-    const text = (await page.evaluate(() => document.body.innerText)).trim();
+    const text = (await stableEval(() => document.body.innerText)).trim();
     if (text) pass('斷網打得開', `畫面有 ${text.length} 個字`);
     else warn('斷網打得開', '頁面空白，這個網站的內容可能要連線才載入得到');
   } catch (err) {
