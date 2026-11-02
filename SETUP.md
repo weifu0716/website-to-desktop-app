@@ -35,9 +35,25 @@
 
 ### 2. 貼 `<head>`
 
-把 `shell/head-snippet.html` 貼進去。`pwa-register.js` 必須用一般 `<script>` 載入，不能加 `type="module"`。
+把 `shell/head-snippet.html` 貼進去。`pwa-register.js` 必須用一般 `<script>` 載入，不能加 `type="module"`。Vite 打包時可能提示這支 script 不會被打包，那是正常的，不用處理。
 
-網站放在子路徑（例如 GitHub Pages 的 `/my-repo/`）時，頁面在子路徑那層就用相對路徑，不用改。更深一層的頁面要寫完整路徑（`/my-repo/manifest.json`）。
+路徑一律從網站根目錄算起（`/manifest.json`），不要改成相對路徑，否則 React、Vue 的內頁會找不到檔案。網站放在子路徑（例如 GitHub Pages 的 `/my-repo/`）時，四個路徑前面都加上 `/my-repo`。
+
+Next.js 的寫法：
+
+```tsx
+// app/layout.tsx
+import Script from "next/script";
+
+export const metadata: Metadata = {
+  manifest: "/manifest.json",
+  icons: { apple: "/apple-touch-icon.png" },
+};
+export const viewport: Viewport = { themeColor: "#ffffff" };
+
+// 放在 <body> 裡
+<Script src="/pwa-register.js" strategy="afterInteractive" />
+```
 
 ### 3. 改設定
 
@@ -50,6 +66,8 @@
 
 ### 4. 做圖示
 
+工具需要 Node.js 20 以上。先跑 `node -v`，沒有就請使用者到 https://nodejs.org 下載 LTS 版，安裝完重開終端機。
+
 在這個 repo 的 `tools/` 資料夾裝一次工具，不要裝進使用者的專案：
 
 ```bash
@@ -57,6 +75,8 @@ cd tools
 npm install
 npx playwright install chromium
 ```
+
+Windows PowerShell 出現「已停用指令碼執行」時，不用改系統設定，把指令換成 `npm.cmd`、`npx.cmd` 就好。第二行會下載約 300 MB 的瀏覽器，先告訴使用者要等一下。
 
 有 logo：
 
@@ -111,7 +131,10 @@ node check-pwa.mjs https://使用者的網址/
 | `no-manifest` | `<link rel="manifest">` 沒貼到，或路徑錯 |
 | `no-acceptable-icon` | 圖示實際尺寸不對，用 `make-icons.mjs` 重做 |
 | `Service Worker 接管` 失敗 | 打開 `https://網址/sw.js`，看是不是 404，或被導回首頁 |
-| `斷網打得開` 失敗 | 首頁被 `NO_CACHE_PATHS` 或 `no-store` 擋掉了 |
+| `斷網打得開` 失敗 | 首頁被 `NO_CACHE_PATHS` 擋掉了，把首頁會用到的路徑拿掉 |
+| `斷網打得開` 顯示 `[注意]` | 首頁是登入頁或即時內容，每次都要連線。這是正常的，轉告使用者斷網時開不了，不用修 |
+
+驗收的網址請用網站首頁。網站要登入才進得去時，驗收只會測到登入頁，這樣就夠了：安裝和自動更新都不受登入影響。
 
 這支工具不能真的點安裝。通過後請使用者自己裝一次：
 

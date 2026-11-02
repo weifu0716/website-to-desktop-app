@@ -15,6 +15,7 @@
 ```text
 我要把這個網站包成可以裝在電腦上的 App。請先把下面這個 repo 下載到專案外面的暫存資料夾，完整讀過 SETUP.md，不要用網頁摘要，然後一步一步幫我做完：
 https://github.com/weifu0716/website-to-desktop-app
+電腦沒有 git 就下載這包：https://github.com/weifu0716/website-to-desktop-app/archive/refs/heads/main.zip
 需要我登入或點按鈕時，直接告訴我要做什麼。
 ```
 

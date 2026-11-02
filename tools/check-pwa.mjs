@@ -99,6 +99,8 @@ try {
   else fail('瀏覽器判定可安裝', errors.map(e => e.errorId).join('、'));
 
   await page.waitForTimeout(500);
+  // 首頁回 no-store 或被導去登入頁，本來就不會存到本機，斷網開不了不算壞掉
+  const alwaysOnline = htmlCache.includes('no-store') || new URL(page.url()).pathname !== url.pathname;
   await context.setOffline(true);
   try {
     await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 15000 });
@@ -106,7 +108,8 @@ try {
     if (text) pass('斷網打得開', `畫面有 ${text.length} 個字`);
     else warn('斷網打得開', '頁面空白，這個網站的內容可能要連線才載入得到');
   } catch (err) {
-    fail('斷網打得開', err.message.split('\n')[0]);
+    if (alwaysOnline) warn('斷網打得開', '首頁每次都要連線（登入頁或即時內容），斷網時開不了');
+    else fail('斷網打得開', err.message.split('\n')[0]);
   }
   await context.setOffline(false);
 

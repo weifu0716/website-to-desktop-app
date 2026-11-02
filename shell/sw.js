@@ -12,9 +12,18 @@ const NO_CACHE_PATHS = ['/api/', '/auth/', '/__/', '/login', '/admin'];
 const CACHE_PREFIX = APP_ID + '@';
 const CACHE_NAME = CACHE_PREFIX + SW_VERSION;
 
+// 伺服器標 no-store 的（通常是個人資料）和被導走的（通常是登入頁）不存本機
+function cacheable(res) {
+  return res.status === 200 && !res.redirected &&
+    !(res.headers.get('cache-control') || '').includes('no-store');
+}
+
 self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE_NAME).then(c => c.add('./')).catch(() => {}));
+  e.waitUntil((async () => {
+    const res = await fetch('./');
+    if (cacheable(res)) await (await caches.open(CACHE_NAME)).put('./', res);
+  })().catch(() => {}));
 });
 
 self.addEventListener('activate', e => {
@@ -46,10 +55,7 @@ self.addEventListener('fetch', e => {
     const cache = await caches.open(CACHE_NAME);
     try {
       const res = await fetch(req);
-      const noStore = (res.headers.get('cache-control') || '').includes('no-store');
-      if (res.status === 200 && !noStore) {
-        e.waitUntil(cache.put(req, res.clone()).catch(() => {}));
-      }
+      if (cacheable(res)) e.waitUntil(cache.put(req, res.clone()).catch(() => {}));
       return res;
     } catch {
       const cached = await cache.match(req);
