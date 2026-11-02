@@ -35,7 +35,7 @@
 
 ### 2. 貼 `<head>`
 
-把 `shell/head-snippet.html` 貼進去。`pwa-register.js` 必須用一般 `<script>` 載入，不能加 `type="module"`。Vite 打包時可能提示這支 script 不會被打包，那是正常的，不用處理。
+把 `shell/head-snippet.html` 貼在 `</head>` 的前一行。`pwa-register.js` 必須用一般 `<script>` 載入，不能加 `type="module"`。
 
 路徑一律從網站根目錄算起（`/manifest.json`），不要改成相對路徑，否則 React、Vue 的內頁會找不到檔案。網站放在子路徑（例如 GitHub Pages 的 `/my-repo/`）時，四個路徑前面都加上 `/my-repo`。
 
@@ -43,6 +43,7 @@ Next.js 的寫法：
 
 ```tsx
 // app/layout.tsx
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 
 export const metadata: Metadata = {
@@ -60,7 +61,8 @@ export const viewport: Viewport = { themeColor: "#ffffff" };
 - `manifest.json`：`name`（完整名稱）、`short_name`（12 字以內，顯示在圖示下方）、`description`、`theme_color`、`background_color`。顏色取自網站本身。
 - `sw.js`：`APP_ID` 改成英數短名。
 - `sw.js`：檢查 `NO_CACHE_PATHS`。把網站的 API、登入、後台路徑都列進去。
-- `head-snippet.html` 的 `theme-color` 跟 manifest 一致。
+- `<head>` 裡的 `theme-color` 跟 manifest 一致。
+- `<title>` 會顯示在 App 視窗上方，還是框架預設文字（例如 `Vite + React`）就改成 App 名稱。
 
 有登入功能的網站要特別看：回應帶 `Cache-Control: no-store` 的頁面不會存到使用者電腦，其他頁面會。含個人資料的頁面要加進 `NO_CACHE_PATHS`，或讓伺服器回 `no-store`。
 
@@ -68,10 +70,10 @@ export const viewport: Viewport = { themeColor: "#ffffff" };
 
 工具需要 Node.js 20 以上。先跑 `node -v`，沒有就請使用者到 https://nodejs.org 下載 LTS 版，安裝完重開終端機。
 
-在這個 repo 的 `tools/` 資料夾裝一次工具，不要裝進使用者的專案：
+在下載下來的這個 repo 的 `tools/` 資料夾裝一次工具，不要裝進使用者的專案。下面的指令都在這個資料夾執行，`--out` 要寫網站公開資料夾的完整路徑：
 
 ```bash
-cd tools
+cd <這個 repo 的路徑>/tools
 npm install
 npx playwright install chromium
 ```
@@ -109,7 +111,7 @@ Firebase 預設會把網頁快取一小時。在 `firebase.json` 的 `hosting` �
 ]
 ```
 
-已經有 `headers` 就合併，不要蓋掉。Cloudflare Pages、Netlify、Vercel、GitHub Pages 的預設值不用改。
+已經有 `headers` 就合併，不要蓋掉。Cloudflare、Netlify、Vercel、GitHub Pages 的預設值不用改。其他主機也先跳過這步，第 7 步驗收如果出現 `[注意] 網頁快取時間`，再查那家主機怎麼設 `Cache-Control: no-cache`。
 
 ### 6. 部署
 
@@ -118,11 +120,11 @@ Firebase 預設會把網頁快取一小時。在 `firebase.json` 的 `hosting` �
 ### 7. 驗收
 
 ```bash
-cd tools
+cd <這個 repo 的路徑>/tools
 node check-pwa.mjs https://使用者的網址/
 ```
 
-每一項都要 `[通過]`，結束碼是 0，才算完成。`[注意]` 要轉告使用者，但不算失敗。
+沒有 `[失敗]`、結束碼是 0，才算完成。`[注意]` 要轉告使用者，但不算失敗。網站有內頁的話，再用一個內頁網址跑一次。
 
 常見失敗：
 
@@ -148,7 +150,7 @@ node check-pwa.mjs https://使用者的網址/
 
 ### 8. 留下更新規則
 
-把這段加進使用者專案的 `CLAUDE.md` 或 `AGENTS.md`，沒有就新建：
+這一步不能省。把這段加進使用者專案的 `CLAUDE.md` 或 `AGENTS.md`，兩個都沒有就新建 `CLAUDE.md`，以後的 AI 才知道要升版：
 
 ```markdown
 ## PWA
@@ -165,7 +167,7 @@ node check-pwa.mjs https://使用者的網址/
 <button data-pwa-install hidden>安裝 App</button>
 ```
 
-`pwa-register.js` 會在可以安裝時顯示它，裝好後隱藏。Safari 和 iPhone 不會出現這個按鈕，要照上表手動操作。
+放在每一頁都看得到的地方（React、Vue 就放在路由外面的共用區塊）。`pwa-register.js` 會在可以安裝時顯示它，裝好後隱藏。Safari 和 iPhone 不會出現這個按鈕，要照上表手動操作。
 
 ## 備案：網站改不了
 

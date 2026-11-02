@@ -17,7 +17,8 @@ const warn = (name, detail = '') => rows.push({ ok: null, name, detail });
 
 const url = new URL(target);
 const isLocal = ['localhost', '127.0.0.1'].includes(url.hostname);
-if (url.protocol === 'https:' || isLocal) pass('HTTPS', url.protocol);
+if (url.protocol === 'https:') pass('HTTPS');
+else if (isLocal) warn('HTTPS', '這是本機測試網址，正式網址要是 https:// 才能給別人安裝');
 else fail('HTTPS', '瀏覽器只允許 HTTPS 網站安裝成 App');
 
 // 一定要 channel: 'chromium'。預設的精簡版無頭瀏覽器不做安裝判定，什麼網站都回「沒問題」
